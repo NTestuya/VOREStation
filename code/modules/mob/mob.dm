@@ -4,6 +4,7 @@
 	living_mob_list -= src
 	unset_machine()
 	qdel(hud_used)
+	clear_fullscreen()
 	if(client)
 		for(var/obj/screen/movable/spell_master/spell_master in spell_masters)
 			qdel(spell_master)
@@ -17,8 +18,6 @@
 	..()
 
 /mob/proc/remove_screen_obj_references()
-	flash = null
-	blind = null
 	hands = null
 	pullin = null
 	purged = null
@@ -33,7 +32,6 @@
 	throw_icon = null
 	nutrition_icon = null
 	pressure = null
-	damageoverlay = null
 	pain = null
 	item_use_icon = null
 	gun_move_icon = null
@@ -361,8 +359,8 @@
 		var/deathtimeseconds = round((deathtime - deathtimeminutes * 600) / 10,1)
 		usr << "You have been dead for[pluralcheck] [deathtimeseconds] seconds."
 
-		if (deathtime < 600)
-			usr << "You must wait 1 minute to respawn!"
+		if (deathtime < (600)) //VOREStation Edit
+			usr << "You must wait 60 seconds to respawn!" //VOREStation Edit
 			return
 		else
 			usr << "You can respawn now, enjoy your new life!"
@@ -662,15 +660,13 @@
 
 		if(client.holder)
 			if(statpanel("Status"))
-				stat("Location:","([x], [y], [z])")
-			if(statpanel("Processes"))
+				stat("Location:", "([x], [y], [z]) [loc]")
 				stat("CPU:","[world.cpu]")
 				stat("Instances:","[world.contents.len]")
-				if(processScheduler && processScheduler.getIsRunning())
-					for(var/datum/controller/process/P in processScheduler.processes)
-						stat(P.getStatName(), P.getTickTime())
-				else
-					stat("processScheduler is not running.")
+
+			if(statpanel("Processes"))
+				if(processScheduler)
+					processScheduler.statProcesses()
 
 		if(listed_turf && client)
 			if(!TurfAdjacent(listed_turf))
@@ -899,7 +895,7 @@ mob/proc/yank_out_object()
 		H.shock_stage+=20
 		affected.take_damage((selection.w_class * 3), 0, 0, 1, "Embedded object extraction")
 
-		if(prob(selection.w_class * 5)) //I'M SO ANEMIC I COULD JUST -DIE-.
+		if(prob(selection.w_class * 5) && (affected < ORGAN_ROBOT)) //I'M SO ANEMIC I COULD JUST -DIE-.
 			var/datum/wound/internal_bleeding/I = new (min(selection.w_class * 5, 15))
 			affected.wounds += I
 			H.custom_pain("Something tears wetly in your [affected] as [selection] is pulled free!", 1)

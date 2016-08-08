@@ -11,8 +11,14 @@
 	var/slices_num
 	var/dried_type = null
 	var/dry = 0
+	var/nutriment_amt = 0
 	center_of_mass = list("x"=16, "y"=16)
 	w_class = 2
+	
+/obj/item/weapon/reagent_containers/food/snacks/New()
+	..()
+	if(nutriment_amt)
+		reagents.add_reagent("nutriment", nutriment_amt)
 
 	//Placeholder for effect that trigger on eating that aren't tied to reagents.
 /obj/item/weapon/reagent_containers/food/snacks/proc/On_Consume(var/mob/M)
@@ -41,6 +47,8 @@
 		return 0
 
 	if(istype(M, /mob/living/carbon))
+		//TODO: replace with standard_feed_mob() call.
+
 		var/fullness = M.nutrition + (M.reagents.get_reagent_amount("nutriment") * 25)
 		if(M == user)								//If you're eating it yourself
 			if(istype(M,/mob/living/carbon/human))
@@ -53,6 +61,8 @@
 					user << "<span class='warning'>\The [blocked] is in the way!</span>"
 					return
 
+			 // Vorestation edits in this section.
+			user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN) //puts a limit on how fast people can eat/drink things
 			if (fullness <= 50)
 				M << "<span class='danger'>You hungrily chew out a piece of [src] and gobble it!</span>"
 			if (fullness > 50 && fullness <= 150)
@@ -61,9 +71,22 @@
 				M << "<span class='notice'>You take a bite of [src].</span>"
 			if (fullness > 350 && fullness <= 550)
 				M << "<span class='notice'>You unwillingly chew a bit of [src].</span>"
-			if (fullness > (550 * (1 + M.overeatduration / 2000)))	// The more you eat - the more you can eat
-				M << "<span class='danger'>You cannot force any more of [src] to go down your throat.</span>"
+			if (fullness > 550 && fullness <= 650)
+				M << "<span class='notice'>You swallow some more of the [src], causing your belly to swell out a little.</span>"
+			if (fullness > 650 && fullness <= 1000)
+				M << "<span class='notice'>You stuff yourself with the [src]. Your stomach feels very heavy.</span>"
+			if (fullness > 1000 && fullness <= 3000)
+				M << "<span class='notice'>You gluttonously swallow down the hunk of [src]. You're so gorged, it's hard to stand.</span>"
+			if (fullness > 3000 && fullness <= 5500)
+				M << "<span class='danger'>You force the piece of [src] down your throat. You can feel your stomach getting firm as it reaches its limits.</span>"
+			if (fullness > 5500 && fullness <= 6000)
+				M << "<span class='danger'>You barely glug down the bite of [src], causing undigested food to force into your intestines. You can't take much more of this!</span>"
+			if (fullness > 6000) // There has to be a limit eventually.
+				M << "<span class='danger'>Your stomach blorts and aches, prompting you to stop. You literally cannot force any more of [src] to go down your throat.</span>"
 				return 0
+			/*if (fullness > (550 * (1 + M.overeatduration / 2000)))	// The more you eat - the more you can eat
+				M << "<span class='danger'>You cannot force any more of [src] to go down your throat.</span>"
+				return 0*/
 		else
 			if(istype(M,/mob/living/carbon/human))
 				var/mob/living/carbon/human/H = M
@@ -77,12 +100,14 @@
 
 			if(!istype(M, /mob/living/carbon/slime))		//If you're feeding it to someone else.
 
-				if (fullness <= (550 * (1 + M.overeatduration / 1000)))
+				/*if (fullness <= (550 * (1 + M.overeatduration / 1000))) // Vorestation edit
 					user.visible_message("<span class='danger'>[user] attempts to feed [M] [src].</span>")
 				else
 					user.visible_message("<span class='danger'>[user] cannot force anymore of [src] down [M]'s throat.</span>")
-					return 0
+					return 0*/
+				user.visible_message("<span class='danger'>[user] attempts to feed [M] [src].</span>") // Vorestation edit
 
+				user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 				if(!do_mob(user, M)) return
 
 				M.attack_log += text("\[[time_stamp()]\] <font color='orange'>Has been fed [src.name] by [user.name] ([user.ckey]) Reagents: [reagentlist(src)]</font>")
@@ -272,6 +297,19 @@
 	reagents.add_reagent("nutriment", 1)
 	reagents.add_reagent("sugar", 3)
 	bitesize = 2
+
+/obj/item/weapon/reagent_containers/food/snacks/candy/proteinbar
+	name = "protein bar"
+	desc = "SwoleMAX brand protein bars, guaranteed to get you feeling perfectly overconfident."
+	icon_state = "proteinbar"
+	trash = /obj/item/trash/candy/proteinbar
+
+/obj/item/weapon/reagent_containers/food/snacks/candy/proteinbar/New()
+	..()
+	reagents.add_reagent("nutriment", 9)
+	reagents.add_reagent("protein", 4)
+	reagents.add_reagent("sugar", 4)
+	bitesize = 6
 
 /obj/item/weapon/reagent_containers/food/snacks/candy/donor
 	name = "Donor Candy"

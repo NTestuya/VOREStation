@@ -56,8 +56,8 @@
 /mob/living/carbon/human/Stat()
 	..()
 	if(statpanel("Status"))
-		stat(null, "Intent: [a_intent]")
-		stat(null, "Move Mode: [m_intent]")
+		stat("Intent:", "[a_intent]")
+		stat("Move Mode:", "[m_intent]")
 		if(emergency_shuttle)
 			var/eta_status = emergency_shuttle.get_status_panel_eta()
 			if(eta_status)
@@ -84,7 +84,7 @@
 
 /mob/living/carbon/human/ex_act(severity)
 	if(!blinded)
-		flick("flash", flash)
+		flash_eyes()
 
 	var/shielded = 0
 	var/b_loss = null
@@ -358,6 +358,11 @@
 
 	if(href_list["item"])
 		handle_strip(href_list["item"],usr)
+
+	// VOREStation Start
+	if(href_list["ooc_notes"])
+		src.Examine_OOC()
+	// VOREStation End
 
 	if (href_list["criminal"])
 		if(hasHUD(usr,"security"))
@@ -774,13 +779,6 @@
 		b_eyes = hex2num(copytext(new_eyes, 6, 8))
 		update_eyes()
 
-	var/new_tone = input("Please select skin tone level: 1-220 (1=albino, 35=caucasian, 150=black, 220='very' black)", "Character Generation", "[35-s_tone]")  as text
-
-	if (!new_tone)
-		new_tone = 35
-	s_tone = max(min(round(text2num(new_tone)), 220), 1)
-	s_tone =  -s_tone + 35
-
 	// hair
 	var/list/all_hairs = typesof(/datum/sprite_accessory/hair) - /datum/sprite_accessory/hair
 	var/list/hairs = list()
@@ -1030,7 +1028,7 @@
 					src << msg
 
 				organ.take_damage(rand(1,3), 0, 0)
-				if(!(organ.status & ORGAN_ROBOT) && !should_have_organ(O_HEART)) //There is no blood in protheses.
+				if(!(organ.robotic >= ORGAN_ROBOT) && !(should_have_organ(O_HEART))) //There is no blood in protheses.
 					organ.status |= ORGAN_BLEEDING
 					src.adjustToxLoss(rand(1,3))
 
@@ -1140,8 +1138,6 @@
 			qdel(hud_used)
 		hud_used = new /datum/hud(src)
 
-	full_prosthetic = null
-
 	if(species)
 		return 1
 	else
@@ -1216,7 +1212,7 @@
 	if(!affecting)
 		. = 0
 		fail_msg = "They are missing that limb."
-	else if (affecting.status & ORGAN_ROBOT)
+	else if (affecting.robotic >= ORGAN_ROBOT)
 		. = 0
 		fail_msg = "That limb is robotic."
 	else
@@ -1333,8 +1329,8 @@
 	var/list/limbs = list()
 	for(var/limb in organs_by_name)
 		var/obj/item/organ/external/current_limb = organs_by_name[limb]
-		if(current_limb && current_limb.dislocated == 2)
-			limbs |= limb
+		if(current_limb && current_limb.dislocated > 0 && !current_limb.is_parent_dislocated()) //if the parent is also dislocated you will have to relocate that first
+			limbs |= current_limb
 	var/choice = input(usr,"Which joint do you wish to relocate?") as null|anything in limbs
 
 	if(!choice)
@@ -1444,7 +1440,7 @@
 	else if(organ_check in list(O_LIVER, O_KIDNEYS))
 		affecting = organs_by_name[BP_GROIN]
 
-	if(affecting && (affecting.status & ORGAN_ROBOT))
+	if(affecting && (affecting.robotic >= ORGAN_ROBOT))
 		return 0
 	return (species && species.has_organ[organ_check])
 

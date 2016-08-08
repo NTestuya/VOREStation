@@ -24,6 +24,8 @@ var/global/datum/global_init/init = new ()
 
 	qdel(src) //we're done
 
+/datum/global_init/Destroy()
+	return 1
 
 /world
 	mob = /mob/new_player
@@ -73,6 +75,9 @@ var/global/datum/global_init/init = new ()
 
 	// Set up roundstart seed list.
 	plant_controller = new()
+
+	// Set up roundstart gene masking
+	xenobio_controller = new()
 
 	// This is kinda important. Set up details of what the hell things are made of.
 	populate_material_list()

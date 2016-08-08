@@ -32,7 +32,6 @@
 	var/temperature_alert = 0
 	var/in_stasis = 0
 	var/heartbeat = 0
-	var/global/list/overlays_cache = null
 
 /mob/living/carbon/human/Life()
 	set invisibility = 0
@@ -154,21 +153,6 @@
 	if(stat != CONSCIOUS) //Let's not worry about tourettes if you're not conscious.
 		return
 
-	//Vision
-	if(species.vision_organ)
-		if(internal_organs_by_name[species.vision_organ])  // Vision organs cut out? Permablind.
-			eye_blind =  0
-			blinded =    0
-			eye_blurry = 0
-		else
-			eye_blind =  1
-			blinded =    1
-			eye_blurry = 1
-	else // Presumably if a species has no vision organs, they see via some other means.
-		eye_blind =  0
-		blinded =    0
-		eye_blurry = 0
-
 	if (disabilities & EPILEPSY)
 		if ((prob(1) && paralysis < 1))
 			src << "\red You have a seizure!"
@@ -185,7 +169,6 @@
 				emote("cough")
 				return
 	if (disabilities & TOURETTES)
-		speech_problem_flag = 1
 		if ((prob(10) && paralysis <= 1))
 			Stun(10)
 			spawn( 0 )
@@ -197,7 +180,6 @@
 				make_jittery(100)
 				return
 	if (disabilities & NERVOUS)
-		speech_problem_flag = 1
 		if (prob(10))
 			stuttering = max(10, stuttering)
 
@@ -238,7 +220,6 @@
 		if(!gene.block)
 			continue
 		if(gene.is_active(src))
-			speech_problem_flag = 1
 			gene.OnMobLife(src)
 
 	radiation = Clamp(radiation,0,100)
@@ -637,11 +618,11 @@
 		if(!istype(loc, /obj/machinery/atmospherics/unary/cryo_cell))
 			var/burn_dam = 0
 			switch(bodytemperature)
-				if(-INFINITY to species.cold_level_3)
+				if(species.cold_level_1 to species.cold_level_2)
 					burn_dam = COLD_DAMAGE_LEVEL_1
-				if(species.cold_level_3 to species.cold_level_2)
+				if(species.cold_level_2 to species.cold_level_3)
 					burn_dam = COLD_DAMAGE_LEVEL_2
-				if(species.cold_level_2 to species.cold_level_1)
+				if(species.cold_level_3 to -INFINITY)
 					burn_dam = COLD_DAMAGE_LEVEL_3
 			take_overall_damage(burn=burn_dam, used_weapon = "Low Body Temperature")
 			fire_alert = max(fire_alert, 1)
@@ -865,7 +846,10 @@
 	if(!isSynthetic() && (species.flags & IS_PLANT) && (!light_organ || light_organ.is_broken()))
 		if(nutrition < 200)
 			take_overall_damage(2,0)
-			traumatic_shock++
+
+			//traumatic_shock is updated every tick, incrementing that is pointless - shock_stage is the counter.
+			//Not that it matters much for diona, who have NO_PAIN.
+			shock_stage++
 
 	// TODO: stomach and bloodstream organ.
 	if(!isSynthetic())
@@ -930,7 +914,6 @@
 			adjustHalLoss(-3)
 
 			if(sleeping)
-				speech_problem_flag = 1
 				handle_dreams()
 				if (mind)
 					//Are they SSD? If so we'll keep them asleep but work off some of that sleep var in case of stoxin or similar.
@@ -969,19 +952,18 @@
 		if(species.vision_organ)
 			vision = internal_organs_by_name[species.vision_organ]
 
-		if(!vision) // Presumably if a species has no vision organs, they see via some other means.
+		if(!species.vision_organ) // Presumably if a species has no vision organs, they see via some other means.
 			eye_blind =  0
 			blinded =    0
 			eye_blurry = 0
-		else if(vision.is_broken())   // Vision organs cut out or broken? Permablind.
+		else if(!vision || vision.is_broken())   // Vision organs cut out or broken? Permablind.
 			eye_blind =  1
 			blinded =    1
 			eye_blurry = 1
-		else
-			//blindness
-			if(sdisabilities & BLIND) // Disabled-blind, doesn't get better on its own
+		else //You have the requisite organs
+			if(sdisabilities & BLIND) 	// Disabled-blind, doesn't get better on its own
 				blinded =    1
-			else if(eye_blind)		       // Blindness, heals slowly over time
+			else if(eye_blind)		  	// Blindness, heals slowly over time
 				eye_blind =  max(eye_blind-1,0)
 				blinded =    1
 			else if(istype(glasses, /obj/item/clothing/glasses/sunglasses/blindfold))	//resting your eyes with a blindfold heals blurry eyes faster
@@ -1031,33 +1013,6 @@
 	return 1
 
 /mob/living/carbon/human/handle_regular_hud_updates()
-	if(!overlays_cache)
-		overlays_cache = list()
-		overlays_cache.len = 23
-		overlays_cache[1] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage1")
-		overlays_cache[2] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage2")
-		overlays_cache[3] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage3")
-		overlays_cache[4] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage4")
-		overlays_cache[5] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage5")
-		overlays_cache[6] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage6")
-		overlays_cache[7] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage7")
-		overlays_cache[8] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage8")
-		overlays_cache[9] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage9")
-		overlays_cache[10] = image('icons/mob/screen1_full.dmi', "icon_state" = "passage10")
-		overlays_cache[11] = image('icons/mob/screen1_full.dmi', "icon_state" = "oxydamageoverlay1")
-		overlays_cache[12] = image('icons/mob/screen1_full.dmi', "icon_state" = "oxydamageoverlay2")
-		overlays_cache[13] = image('icons/mob/screen1_full.dmi', "icon_state" = "oxydamageoverlay3")
-		overlays_cache[14] = image('icons/mob/screen1_full.dmi', "icon_state" = "oxydamageoverlay4")
-		overlays_cache[15] = image('icons/mob/screen1_full.dmi', "icon_state" = "oxydamageoverlay5")
-		overlays_cache[16] = image('icons/mob/screen1_full.dmi', "icon_state" = "oxydamageoverlay6")
-		overlays_cache[17] = image('icons/mob/screen1_full.dmi', "icon_state" = "oxydamageoverlay7")
-		overlays_cache[18] = image('icons/mob/screen1_full.dmi', "icon_state" = "brutedamageoverlay1")
-		overlays_cache[19] = image('icons/mob/screen1_full.dmi', "icon_state" = "brutedamageoverlay2")
-		overlays_cache[20] = image('icons/mob/screen1_full.dmi', "icon_state" = "brutedamageoverlay3")
-		overlays_cache[21] = image('icons/mob/screen1_full.dmi', "icon_state" = "brutedamageoverlay4")
-		overlays_cache[22] = image('icons/mob/screen1_full.dmi', "icon_state" = "brutedamageoverlay5")
-		overlays_cache[23] = image('icons/mob/screen1_full.dmi', "icon_state" = "brutedamageoverlay6")
-
 	if(hud_updateflag) // update our mob's hud overlays, AKA what others see flaoting above our head
 		handle_hud_list()
 
@@ -1070,77 +1025,59 @@
 		if(copytext(hud.icon_state,1,4) == "hud") //ugly, but icon comparison is worse, I believe
 			client.images.Remove(hud)
 
-	client.screen.Remove(global_hud.blurry, global_hud.druggy, global_hud.vimpaired, global_hud.darkMask, global_hud.nvg, global_hud.thermal, global_hud.meson, global_hud.science)
+	client.screen.Remove(global_hud.blurry, global_hud.druggy, global_hud.vimpaired, global_hud.darkMask, global_hud.nvg, global_hud.thermal, global_hud.meson, global_hud.science, global_hud.whitense)
 
-	if(damageoverlay.overlays)
-		damageoverlay.overlays = list()
+	if(istype(client.eye,/obj/machinery/camera))
+		var/obj/machinery/camera/cam = client.eye
+		client.screen |= cam.client_huds
 
-	if(stat == UNCONSCIOUS)
+	if(stat == UNCONSCIOUS && health <= 0)
 		//Critical damage passage overlay
-		if(health <= 0)
-			var/image/I
-			switch(health)
-				if(-20 to -10)
-					I = overlays_cache[1]
-				if(-30 to -20)
-					I = overlays_cache[2]
-				if(-40 to -30)
-					I = overlays_cache[3]
-				if(-50 to -40)
-					I = overlays_cache[4]
-				if(-60 to -50)
-					I = overlays_cache[5]
-				if(-70 to -60)
-					I = overlays_cache[6]
-				if(-80 to -70)
-					I = overlays_cache[7]
-				if(-90 to -80)
-					I = overlays_cache[8]
-				if(-95 to -90)
-					I = overlays_cache[9]
-				if(-INFINITY to -95)
-					I = overlays_cache[10]
-			damageoverlay.overlays += I
+		var/severity = 0
+		switch(health)
+			if(-20 to -10)			severity = 1
+			if(-30 to -20)			severity = 2
+			if(-40 to -30)			severity = 3
+			if(-50 to -40)			severity = 4
+			if(-60 to -50)			severity = 5
+			if(-70 to -60)			severity = 6
+			if(-80 to -70)			severity = 7
+			if(-90 to -80)			severity = 8
+			if(-95 to -90)			severity = 9
+			if(-INFINITY to -95)	severity = 10
+		overlay_fullscreen("crit", /obj/screen/fullscreen/crit, severity)
 	else
+		clear_fullscreen("crit")
 		//Oxygen damage overlay
 		if(oxyloss)
-			var/image/I
+			var/severity = 0
 			switch(oxyloss)
-				if(10 to 20)
-					I = overlays_cache[11]
-				if(20 to 25)
-					I = overlays_cache[12]
-				if(25 to 30)
-					I = overlays_cache[13]
-				if(30 to 35)
-					I = overlays_cache[14]
-				if(35 to 40)
-					I = overlays_cache[15]
-				if(40 to 45)
-					I = overlays_cache[16]
-				if(45 to INFINITY)
-					I = overlays_cache[17]
-			damageoverlay.overlays += I
+				if(10 to 20)		severity = 1
+				if(20 to 25)		severity = 2
+				if(25 to 30)		severity = 3
+				if(30 to 35)		severity = 4
+				if(35 to 40)		severity = 5
+				if(40 to 45)		severity = 6
+				if(45 to INFINITY)	severity = 7
+			overlay_fullscreen("oxy", /obj/screen/fullscreen/oxy, severity)
+		else
+			clear_fullscreen("oxy")
 
 		//Fire and Brute damage overlay (BSSR)
 		var/hurtdamage = src.getBruteLoss() + src.getFireLoss() + damageoverlaytemp
 		damageoverlaytemp = 0 // We do this so we can detect if someone hits us or not.
 		if(hurtdamage)
-			var/image/I
+			var/severity = 0
 			switch(hurtdamage)
-				if(10 to 25)
-					I = overlays_cache[18]
-				if(25 to 40)
-					I = overlays_cache[19]
-				if(40 to 55)
-					I = overlays_cache[20]
-				if(55 to 70)
-					I = overlays_cache[21]
-				if(70 to 85)
-					I = overlays_cache[22]
-				if(85 to INFINITY)
-					I = overlays_cache[23]
-			damageoverlay.overlays += I
+				if(10 to 25)		severity = 1
+				if(25 to 40)		severity = 2
+				if(40 to 55)		severity = 3
+				if(55 to 70)		severity = 4
+				if(70 to 85)		severity = 5
+				if(85 to INFINITY)	severity = 6
+			overlay_fullscreen("brute", /obj/screen/fullscreen/brute, severity)
+		else
+			clear_fullscreen("brute")
 
 	if( stat == DEAD )
 		sight |= SEE_TURFS|SEE_MOBS|SEE_OBJS|SEE_SELF
@@ -1284,20 +1221,20 @@
 						bodytemp.icon_state = "temp-1"
 					else
 						bodytemp.icon_state = "temp0"
-		if(blind)
-			if(blinded)		blind.layer = 18
-			else			blind.layer = 0
+
+		if(blinded)		overlay_fullscreen("blind", /obj/screen/fullscreen/blind)
+		else			clear_fullscreens()
 
 		if(disabilities & NEARSIGHTED)	//this looks meh but saves a lot of memory by not requiring to add var/prescription
 			if(glasses)					//to every /obj/item
 				var/obj/item/clothing/glasses/G = glasses
 				if(!G.prescription)
-					client.screen += global_hud.vimpaired
+					set_fullscreen(disabilities & NEARSIGHTED, "impaired", /obj/screen/fullscreen/impaired, 1)
 			else
-				client.screen += global_hud.vimpaired
+				set_fullscreen(disabilities & NEARSIGHTED, "impaired", /obj/screen/fullscreen/impaired, 1)
 
-		if(eye_blurry)			client.screen += global_hud.blurry
-		if(druggy)				client.screen += global_hud.druggy
+		set_fullscreen(eye_blurry, "blurry", /obj/screen/fullscreen/blurry)
+		set_fullscreen(druggy, "high", /obj/screen/fullscreen/high)
 
 		if(config.welder_vision)
 			var/found_welder
@@ -1532,7 +1469,7 @@
 
 	var/obj/item/organ/internal/heart/H = internal_organs_by_name[O_HEART]
 
-	if(!H || (H.status & ORGAN_ROBOT))
+	if(!H || (H.robotic >= ORGAN_ROBOT))
 		return
 
 	if(pulse >= PULSE_2FAST || shock_stage >= 10 || istype(get_turf(src), /turf/space))
@@ -1584,9 +1521,6 @@
 		if(stat == DEAD)
 			holder.icon_state = "huddead"
 			holder2.icon_state = "huddead"
-		else if(status_flags & XENO_HOST)
-			holder.icon_state = "hudxeno"
-			holder2.icon_state = "hudxeno"
 		else if(foundVirus)
 			holder.icon_state = "hudill"
 		else if(has_brain_worms())
@@ -1682,28 +1616,11 @@
 			hud_list[SPECIALROLE_HUD] = holder
 	hud_updateflag = 0
 
-/mob/living/carbon/human/handle_silent()
-	if(..())
-		speech_problem_flag = 1
-	return silent
-
-/mob/living/carbon/human/handle_slurring()
-	if(..())
-		speech_problem_flag = 1
-	return slurring
-
 /mob/living/carbon/human/handle_stunned()
 	if(!can_feel_pain())
 		stunned = 0
 		return 0
-	if(..())
-		speech_problem_flag = 1
-	return stunned
-
-/mob/living/carbon/human/handle_stuttering()
-	if(..())
-		speech_problem_flag = 1
-	return stuttering
+	return ..()
 
 /mob/living/carbon/human/handle_fire()
 	if(..())

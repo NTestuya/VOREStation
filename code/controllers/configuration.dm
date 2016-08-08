@@ -21,6 +21,7 @@ var/list/gamemode_cache = list()
 	var/log_pda = 0						// log pda messages
 	var/log_hrefs = 0					// logs all links clicked in-game. Could be used for debugging and tracking down exploits
 	var/log_runtime = 0					// logs world.log to a file
+	var/log_world_output = 0			// log world.log << messages
 	var/sql_enabled = 0					// for sql switching
 	var/allow_admin_ooccolor = 0		// Allows admins with relevant permissions to have their own ooc colour
 	var/allow_vote_restart = 0 			// allow votes to restart
@@ -64,6 +65,7 @@ var/list/gamemode_cache = list()
 	var/usewhitelist = 0
 	var/kick_inactive = 0				//force disconnect for inactive players after this many minutes, if non-0
 	var/show_mods = 0
+	var/show_devs = 0
 	var/show_mentors = 0
 	var/mods_can_tempban = 0
 	var/mods_can_job_tempban = 0
@@ -327,6 +329,9 @@ var/list/gamemode_cache = list()
 				if ("log_pda")
 					config.log_pda = 1
 
+				if ("log_world_output")
+					config.log_world_output = 1
+
 				if ("log_hrefs")
 					config.log_hrefs = 1
 
@@ -500,6 +505,9 @@ var/list/gamemode_cache = list()
 
 				if("show_mods")
 					config.show_mods = 1
+
+				if("show_devs")
+					config.show_devs = 1
 
 				if("show_mentors")
 					config.show_mentors = 1

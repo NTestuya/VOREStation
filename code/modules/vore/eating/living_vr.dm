@@ -7,6 +7,7 @@
 	var/weight = 137					// Weight for mobs for weightgain system
 	var/weight_gain = 1 				// How fast you gain weight
 	var/weight_loss = 0.5 				// How fast you lose weight
+	var/egg_type = "egg" 					// Default egg type.
 
 //
 // Hook for generic creation of stuff on new creatures
@@ -216,7 +217,7 @@
 //
 //	Proc for applying vore preferences, given bellies
 //
-/mob/living/proc/copy_from_prefs_vr(var/list/bellies)
+/mob/living/proc/copy_from_prefs_vr()
 	if(!client || !client.prefs_vr)
 		src << "<span class='warning'>You attempted to apply your vore prefs but somehow you're in this character without a client.prefs_vr variable. Tell a dev.</span>"
 		return 0
@@ -224,14 +225,11 @@
 	var/datum/vore_preferences/P = client.prefs_vr
 
 	src.digestable = P.digestable
-	src.vore_organs = P.belly_prefs
+	src.vore_organs = list()
 
-	if(!src.vore_organs) //Emergency double-backup to stop runtimes from doing .len on this.
-		vore_organs = list()
-
-	for(var/I in vore_organs) //Set the owner at runtime since... yanno.
-		var/datum/belly/B = vore_organs[I]
-		B.owner = src
+	for(var/I in P.belly_prefs)
+		var/datum/belly/Bp = P.belly_prefs[I]
+		src.vore_organs[Bp.name] = Bp.copy(src)
 
 	return 1
 

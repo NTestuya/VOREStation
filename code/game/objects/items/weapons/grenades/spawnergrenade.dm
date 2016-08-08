@@ -18,7 +18,7 @@
 		playsound(T, 'sound/effects/phasein.ogg', 100, 1)
 		for(var/mob/living/carbon/human/M in viewers(T, null))
 			if(M:eyecheck() <= 0)
-				flick("e_flash", M.flash)
+				M.flash_eyes()
 
 		// Spawn some hostile syndicate critters
 		for(var/i=1, i<=deliveryamt, i++)
@@ -37,6 +37,6 @@
 
 /obj/item/weapon/grenade/spawnergrenade/spesscarp
 	name = "carp delivery grenade"
-	spawner_type = /mob/living/simple_animal/hostile/carp
+	spawner_type = /mob/living/simple_animal/hostile/vore/carp // Vorestation edit
 	deliveryamt = 5
 	origin_tech = list(TECH_MATERIAL = 3, TECH_MAGNET = 4, TECH_ILLEGAL = 4)

@@ -58,6 +58,9 @@ LOG_ATTACK
 ## log pda messages
 LOG_PDA
 
+## log world.log messages
+# LOG_WORLD_OUTPUT
+
 ## log all Topic() calls (for use by coders in tracking down Topic issues)
 # LOG_HREFS
 
@@ -73,6 +76,8 @@ SQL_ENABLED
 ## disconnect players who did nothing during the set amount of minutes
 # KICK_INACTIVE 10
 
+##Show developers on staffwho
+SHOW_DEVS
 ##Show mods on staffwho
 SHOW_MODS
 
